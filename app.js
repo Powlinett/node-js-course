@@ -2,12 +2,16 @@ const path = require('path');
 
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
 
 const pagesController = require('./controllers/pages');
-const mongoConnect = require('./helpers/database').mongoConnect;
+
 const User = require('./models/user');
 
 const app = express();
+
+dotenv.config();
 
 app.set('view engine', 'ejs');
 app.set('views', 'views');
@@ -19,9 +23,9 @@ app.use(bodyParser.urlencoded({extended: false}));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use((req, res, next) => {
-  User.findById('5f4a92b3e2e357d81b1d9440')
+  User.findById('5f4c1a2e795f3616a18c998b')
     .then(user => {
-      req.user = new User(user.username, user.email, user.cart, user._id);
+      req.user = user;
       next();
     })
     .catch((err) => {
@@ -34,6 +38,26 @@ app.use(shopRoutes);
 
 app.use('/', pagesController.pageNotFound);
 
-mongoConnect(() => {
-	app.listen(3000);
-});
+mongoose
+  .connect(
+    `mongodb+srv://Powlinett:${process.env.MONGODB_PASSWORD}@cluster0.pjc04.mongodb.net/Project0?retryWrites=true&w=majority`
+  )
+  .then((result) => {
+    User.findOne()
+      .then((user) => {
+        if (!user) {
+          const user = new User({
+            username: 'popo',
+            email: 'popo@test.com',
+            cart: {
+              items: []
+            }
+          });
+          user.save();
+        };
+      });
+    app.listen(3000);
+  })
+  .catch((err) => {
+    console.log(err);
+  });
